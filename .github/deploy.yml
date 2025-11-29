@@ -1,0 +1,52 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Zip React Build
+        run: |
+             cd ${GITHUB_WORKSPACE}/client
+             zip -r build.zip . 
+      - name: Copy build.zip to server
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: localhost
+          username: technomers-lin-0035
+          source: "${GITHUB_WORKSPACE}/client/build.zip"
+          target: /opt/app/
+
+      - name: Unzip and deploy on server
+        uses: appleboy/ssh-action@v0.1.10
+        with:
+          host: localhost
+          username: ashishshetty
+          password: ashish@123
+          script: |
+            cd /opt/app/
+            unzip -o build.zip
+            rm build.zip
+
+
+      - name: run the project
+        script: |
+            cd /opt/app/
+            pm2 restart all 
